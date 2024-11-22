@@ -20,7 +20,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.actions.action_builder import ActionBuilder
 from selenium.webdriver.chrome.options import Options
 import cv2
-
+import shutil
 
 
 # Specify the path to your .env file
@@ -237,7 +237,7 @@ def interact_with_site (driver, loc = 0, mode = "click", vertical = 0, horizonta
                     time.sleep(max(0, random.gauss(.3, 0.05)))
                     clear_map(driver)
                 
-                print("executed")
+                print("point clicked...")
 
     
     if mode == "pan":      
@@ -248,6 +248,7 @@ def interact_with_site (driver, loc = 0, mode = "click", vertical = 0, horizonta
 def clear_popup(driver):
     driver, xOut_location = element_location(driver, "clearPopup", 5, fail_safe = True)
     interact_with_site(driver, loc = xOut_location, mode="click", clicks=1, fail_safe=True)
+    print("popup cleared")
 
 def zoom_change(driver):
     driver, zoom_location = element_location(driver, "zoom", 5, fail_safe = True)
@@ -292,7 +293,7 @@ def order_production (driver, fail_safe = False):
            
     for point in idle_locations: 
         #point = idle_locations[0]
-        print([point])
+        #print([point])
         interact_with_site(driver, loc = [point], mode="click", clicks=1, fail_safe=False)
         time.sleep(max(0, random.gauss(.5, 0.1)))
         driver, production_button_locations = element_location(driver, "makeProduction", 5, threshold=.8, fail_safe=False)
@@ -319,26 +320,35 @@ def collect_rewards (driver, fail_safe = False):
             clear_map(driver)        
             print("mission reward collected")
         clear_map(driver) 
-            
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-driver = launch_game(USRNAME, USRPWD)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-clear_map(driver)
+       
+def clear_screenshots_folder(path):
+    """
+    Deletes all files and subdirectories in the provided folder.
 
-#set correct window dimensions
+    Parameters:
+    path (str): Path to the folder to clear.
+    """
+    if not os.path.exists(path):
+        print(f"The folder '{path}' does not exist.")
+        return
 
-zoom_change(driver)
+    # Iterate through each item in the folder
+    for item in os.listdir(path):
+        item_path = os.path.join(path, item)
 
-if not townHallLocation:
-    
+        try:
+            # Check if it's a file or directory
+            if os.path.isfile(item_path) or os.path.islink(item_path):
+                os.unlink(item_path)  # Remove file or symbolic link
+            elif os.path.isdir(item_path):
+                shutil.rmtree(item_path)  # Remove directory and its contents
+        except Exception as e:
+            print(f"Error while deleting {item_path}: {e}")
 
-driver, townHallLocation = element_location(driver, "townHall", 0, .8, fail_safe=True)
+    print(f"All data in the folder '{path}' has been deleted.")
 
 
-driver, zoom_location = element_location(driver, "zoom", 10)
-interact_with_site(driver, loc=zoom_location, mode="click")
-interact_with_site(driver, mode="pan",vertical=200)
-
+#%%
 #clear popup
 clear_popup(driver)
 collect_coins(driver)
@@ -347,9 +357,44 @@ collect_crates(driver)
 collect_troops(driver)
 order_production(driver)
 order_troops(driver)
+clear_screenshots_folder(r"C:\Users\arose\OneDrive - Ortho Molecular Products\Desktop\side projects\FoE app\ScreenShots")
 
+#%%
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+driver = launch_game(USRNAME, USRPWD)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+total_duration = 14400  # 1 hour
+start_time = time.time()
+
+# Define the folder path for clearing screenshots
+screenshot_folder = r"C:\Users\arose\OneDrive - Ortho Molecular Products\Desktop\side projects\FoE app\ScreenShots"
+
+# Main loop
+while (time.time() - start_time) < total_duration:
+    try:
+        # Execute the defined functions
+        clear_map(driver)
+        clear_popup(driver)
+        collect_coins(driver)
+        collect_production(driver)
+        collect_crates(driver)
+        collect_troops(driver)
+        order_production(driver)
+        order_troops(driver)
+        clear_screenshots_folder(screenshot_folder)
+
+        print(f"Tasks completed- {time.strftime('%H:%M.%S')}. Waiting for the next interval...")
+    except Exception as e:
+        print(f"An error occurred during task execution: {e}")
+
+    # Randomized delay between 6 and 8 minutes
+    delay = random.uniform(300, 360)
+    print(f"Sleeping for {int(delay / 60)} minutes and {int(delay % 60)} seconds.")
+    time.sleep(delay)
+
+print("Execution completed.")
 
 driver.close()
 
